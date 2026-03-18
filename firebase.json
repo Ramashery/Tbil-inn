@@ -5,8 +5,7 @@
       "firebase.json",
       "*.md",
       "patch-slugs.html",
-      "seed.html",
-      "admin.html",
+      "seed.html", 
       ".firebaserc",
       "node_modules/**"
     ],
