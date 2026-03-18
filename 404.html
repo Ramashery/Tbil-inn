@@ -3,44 +3,54 @@
 <head>
   <meta charset="UTF-8">
   <title>Tbil Inn</title>
-  <!--
-    GitHub Pages SPA routing:
-    When a user hits  /Tbil-inn/rooms/the-courtyard-suite/
-    GitHub Pages 404s because there's no physical file.
-    This 404.html intercepts and redirects to the right template.
-
-    Logic:
-      /rooms/<anything>  → /rooms/   (rooms/index.html reads the slug from URL)
-      /services/<anything> → /services/
-      everything else    → /   (home)
-  -->
   <script>
-    (function () {
-      var path = window.location.pathname;
-      // Detect GitHub Pages repo prefix (e.g. /Tbil-inn)
-      var base = '';
-      if (window.location.hostname.endsWith('github.io')) {
-        var parts = path.split('/').filter(Boolean);
-        if (parts.length) base = '/' + parts[0];
-      }
+  (function () {
+    /*
+      GitHub Pages SPA routing for Tbil Inn
+      ─────────────────────────────────────
+      Incoming URL examples (GitHub Pages serves this 404.html for all missing paths):
 
-      var rel = path.slice(base.length); // path without repo prefix
+        /Tbil-inn/rooms/the-courtyard-suite/
+        /Tbil-inn/services/old-town-spa/
 
-      var dest;
-      if (/^\/rooms(\/|$)/.test(rel)) {
-        dest = base + '/rooms/';
-      } else if (/^\/services(\/|$)/.test(rel)) {
-        dest = base + '/services/';
-      } else {
-        dest = base + '/';
-      }
+      Strategy: redirect to the template file, passing the slug as a
+      URL query param  ?slug=the-courtyard-suite  so there is ZERO
+      dependency on sessionStorage (which can be unreliable across
+      same-origin navigations in some mobile browsers).
 
-      // Preserve the original path so the template can read the slug
-      // We store it in sessionStorage so the template page can read it.
-      sessionStorage.setItem('tbil_redirect_from', path);
+      Template files that must exist in the repo:
+        rooms/index.html     ← reads ?slug=
+        services/index.html  ← reads ?slug=
+    */
 
-      window.location.replace(dest);
-    })();
+    var path  = window.location.pathname;   // e.g. /Tbil-inn/rooms/the-courtyard-suite
+    var host  = window.location.hostname;
+
+    // Detect repo base-path on GitHub Pages  →  "/Tbil-inn"
+    var base = '';
+    if (host.endsWith('github.io')) {
+      var firstSeg = path.split('/').filter(Boolean)[0];
+      if (firstSeg) base = '/' + firstSeg;
+    }
+
+    // Strip base from path  →  "/rooms/the-courtyard-suite"
+    var rel = path.slice(base.length).replace(/\/$/, ''); // trim trailing slash
+
+    // Extract type and slug
+    // rel looks like:  /rooms/the-courtyard-suite
+    //                  /services/old-town-spa
+    var m = rel.match(/^\/(rooms|services)\/(.+)$/);
+
+    if (m) {
+      var type = m[1];   // "rooms" or "services"
+      var slug = m[2];   // "the-courtyard-suite"
+      // Redirect to the template, slug in query string
+      window.location.replace(base + '/' + type + '/index.html?slug=' + encodeURIComponent(slug));
+    } else {
+      // Not a room/service URL — go home
+      window.location.replace(base + '/');
+    }
+  })();
   </script>
 </head>
 <body></body>
