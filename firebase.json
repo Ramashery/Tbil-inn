@@ -1,0 +1,32 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "*.md",
+      "patch-slugs.html",
+      "seed.html",
+      "admin.html",
+      ".firebaserc",
+      "node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/rooms/**",
+        "destination": "/rooms.html"
+      },
+      {
+        "source": "/services/**",
+        "destination": "/services.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(js|css)",
+        "headers": [
+          { "key": "Cache-Control", "value": "max-age=3600" }
+        ]
+      }
+    ]
+  }
+}
