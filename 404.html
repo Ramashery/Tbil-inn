@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Tbil Inn</title>
+  <!--
+    GitHub Pages SPA routing:
+    When a user hits  /Tbil-inn/rooms/the-courtyard-suite/
+    GitHub Pages 404s because there's no physical file.
+    This 404.html intercepts and redirects to the right template.
+
+    Logic:
+      /rooms/<anything>  → /rooms/   (rooms/index.html reads the slug from URL)
+      /services/<anything> → /services/
+      everything else    → /   (home)
+  -->
+  <script>
+    (function () {
+      var path = window.location.pathname;
+      // Detect GitHub Pages repo prefix (e.g. /Tbil-inn)
+      var base = '';
+      if (window.location.hostname.endsWith('github.io')) {
+        var parts = path.split('/').filter(Boolean);
+        if (parts.length) base = '/' + parts[0];
+      }
+
+      var rel = path.slice(base.length); // path without repo prefix
+
+      var dest;
+      if (/^\/rooms(\/|$)/.test(rel)) {
+        dest = base + '/rooms/';
+      } else if (/^\/services(\/|$)/.test(rel)) {
+        dest = base + '/services/';
+      } else {
+        dest = base + '/';
+      }
+
+      // Preserve the original path so the template can read the slug
+      // We store it in sessionStorage so the template page can read it.
+      sessionStorage.setItem('tbil_redirect_from', path);
+
+      window.location.replace(dest);
+    })();
+  </script>
+</head>
+<body></body>
+</html>
