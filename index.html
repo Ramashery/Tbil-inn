@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tbil Inn — Tbilisi</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Навигация с переключателем языка -->
+  <nav id="main-nav">
+    <a href="index.html" class="nav-logo">Tbil Inn</a>
+    <ul class="nav-links">
+      <li><a href="#rooms">Rooms</a></li>
+      <li><a href="#services">Services</a></li>
+      <li><a href="#contacts">Contacts</a></li>
+      <!-- Переключатель языка -->
+      <li>
+        <select onchange="changeLanguage(this.value)" style="background:transparent; color:inherit; border:none; outline:none; cursor:pointer;">
+          <option value="en">EN</option>
+          <option value="ru">RU</option>
+          <option value="ka">KA</option>
+        </select>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Герой-секция (Динамическая) -->
+  <section id="hero">
+    <div class="hero-slider" id="hero-slider-container">
+      <!-- Загружается из БД -->
+    </div>
+  </section>
+
+  <!-- Секция Rooms -->
+  <section id="rooms" class="drag-section">
+    <div class="section-header fade-in">
+      <span class="section-label" id="lbl-rooms-sub">Accommodations</span>
+      <h2 class="section-title" id="lbl-rooms-title">Our Rooms</h2>
+      <div class="section-divider"></div>
+    </div>
+    <div class="drag-track-container">
+      <div class="image-track" id="rooms-track">
+        <!-- Сюда попадут карточки комнат -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Секция Services -->
+  <section id="services" class="drag-section" style="background:var(--sand);">
+    <div class="section-header fade-in">
+      <span class="section-label" id="lbl-svc-sub">What We Offer</span>
+      <h2 class="section-title" id="lbl-svc-title">Services</h2>
+      <div class="section-divider"></div>
+    </div>
+    <div class="drag-track-container">
+      <div class="image-track" id="services-track">
+        <!-- Сюда попадут карточки услуг -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Подключаем логику -->
+  <script type="module">
+    import { db, collection, getDocs, doc, getDoc, currentLang } from './main.js';
+
+    // Установка селектора языка в правильное положение
+    document.querySelector('select').value = currentLang;
+
+    async function loadHomePage() {
+      // 1. Загрузка контента страницы (Сайт -> Главная)
+      const hpDoc = await getDoc(doc(db, "siteContent", "homepage"));
+      if (hpDoc.exists()) {
+        const hpData = hpDoc.data();
+        
+        // Рендер Hero слайдов
+        const heroContainer = document.getElementById('hero-slider-container');
+        hpData.heroSlides.forEach((slide, idx) => {
+          heroContainer.innerHTML += `
+            <div class="carousel-cell" style="background-image:url('${slide.img}'); height: 100vh; background-size: cover; position: relative;">
+              <div class="overlay"></div>
+              <div class="inner" style="position: absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:2; text-align:center; color:white;">
+                <h1 class="title" style="font-family:'Cormorant Garamond'; font-size:4rem;">${slide.langs[currentLang].title}</h1>
+              </div>
+            </div>`;
+        });
+      }
+
+      // 2. Загрузка комнат
+      const roomsSnap = await getDocs(collection(db, "rooms"));
+      const roomsTrack = document.getElementById('rooms-track');
+      roomsSnap.forEach(snap => {
+        const r = snap.data();
+        if (r.status !== 'live') return;
+        const t = r.langs[currentLang];
+        roomsTrack.innerHTML += `
+          <div class="card-room-new">
+            <img src="${r.cover}" draggable="false">
+            <div class="card-body">
+              <span class="card-category">${r.bed}</span>
+              <h3 class="card-title">${t.name}</h3>
+              <p class="card-desc">${t.desc}</p>
+            </div>
+            <div class="card-footer">
+              <span class="card-price">From $${r.price}</span>
+              <a class="card-link" href="room.html?id=${snap.id}">Explore</a>
+            </div>
+          </div>`;
+      });
+
+      // 3. Загрузка сервисов
+      const svcSnap = await getDocs(collection(db, "services"));
+      const svcTrack = document.getElementById('services-track');
+      svcSnap.forEach(snap => {
+        const s = snap.data();
+        if (s.status !== 'live') return;
+        const t = s.langs[currentLang];
+        svcTrack.innerHTML += `
+          <a href="service.html?id=${snap.id}" class="service-card">
+            <div class="service-card-img"><img src="${s.cover}" draggable="false"></div>
+            <div class="service-card-body">
+              <span class="service-card-cat">${s.category}</span>
+              <h3 class="service-card-title">${t.name}</h3>
+              <p class="service-card-desc">${t.short}</p>
+            </div>
+          </a>`;
+      });
+    }
+
+    loadHomePage();
+  </script>
+</body>
+</html>
