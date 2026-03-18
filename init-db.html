@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Initialize Tbil Inn Database</title>
+    <style>
+        body { font-family: sans-serif; padding: 50px; text-align: center; background: #f9f8f3; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: inline-block; }
+        button { background: #B09A6A; color: white; border: none; padding: 15px 30px; border-radius: 6px; cursor: pointer; font-size: 16px; }
+        button:disabled { background: #ccc; }
+        #log { margin-top: 20px; text-align: left; max-width: 500px; margin-left: auto; margin-right: auto; font-size: 13px; color: #666; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>Tbil Inn Database Setup</h1>
+    <p>Нажмите кнопку ниже, чтобы создать структуру коллекций в Firestore.</p>
+    <button id="initBtn">Запустить инициализацию</button>
+    <div id="log"></div>
+</div>
+
+<script type="module">
+    // Импорт нужных функций Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getFirestore, doc, setDoc, collection } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+    // ВАШ КОНФИГ (из скриншота)
+    const firebaseConfig = {
+        apiKey: "AIzaSyB8CuIy_VVIOpXLYtscG366KoEqOJOVt1w",
+        authDomain: "tbil-inn.firebaseapp.com",
+        projectId: "tbil-inn",
+        storageBucket: "tbil-inn.firebasestorage.app",
+        messagingSenderId: "460166841090",
+        appId: "1:460166841090:web:371dffb9c9c1d314c2381b",
+        measurementId: "G-8ET4GLHRT3"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const logEl = document.getElementById('log');
+    function log(msg) { logEl.innerHTML += `<div>${msg}</div>`; }
+
+    // ДАННЫЕ ДЛЯ ИНИЦИАЛИЗАЦИИ
+    const initialRooms = [
+        { id: "room-1", status: 'live', price: 120, area: 32, guests: 2, bed: 'King Size', code: 'TB-101', cover: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&q=70', amenities: ['Wi-Fi','A/C','Mini Bar','TV','Safe','Hairdryer'], langs: { en: { name:'Superior Double Room', sub:'Elegant with city views', desc:'A refined retreat in the heart of Old Town.', highlight:'Private balcony' }, ru: { name:'Двухместный номер Superior', sub:'Элегантный вид на город', desc:'Изысканный отдых в центре Старого города.', highlight:'Частный балкон' }, ka: { name:'Superior ორადგილიანი ნომერი', sub:'ელეგანტური ხედი ქალაქზე', desc:'დახვეწილი სადგური ძველი ქალაქის გულში.', highlight:'პირადი ბალკონი' } } },
+        { id: "room-2", status: 'draft', price: 185, area: 45, guests: 2, bed: 'King Size', code: 'TB-202', cover: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400&q=70', amenities: ['Wi-Fi','A/C','Mini Bar','TV','Safe','Bathtub','Nespresso'], langs: { en: { name:'Deluxe Terrace Suite', sub:'Luxury King with Garden View', desc:'Experience the heartbeat of Old Tbilisi.', highlight:'Sprawling terrace' }, ru: { name:'Люкс Делюкс Терраса', sub:'Люкс с видом на сад', desc:'Почувствуйте пульс Старого Тбилиси.', highlight:'Большая терраса' }, ka: { name:'Deluxe ტერასის სუიტი', sub:'ლაქსი ბაღის ხედით', desc:'განიცადეთ ძველი თბილისის გულისცემა.', highlight:'ვრცელი ტერასა' } } }
+    ];
+
+    const initialServices = [
+        { id: "svc-1", status: 'live', category: 'Spa & Wellness', price: '₾150', cover: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=400&q=70', langs: { en: { name:'Old Town Spa', short:'Traditional Georgian rituals' }, ru: { name:'Спа в Старом городе', short:'Традиционные ритуалы' }, ka: { name:'ძველი ქალაქის სპა', short:'ტრადიციული რიტუალები' } } }
+    ];
+
+    const siteContent = {
+        homepage: {
+            heroSlides: [
+                { img: "https://68.media.tumblr.com/57836ee52bc9355ad7c5fed5abf91ccc/tumblr_oiboo6MaRS1slhhf0o1_1280.jpg", langs: { en: {title: "Where Old World Meets Refined Living"}, ru: {title: "Где старый мир встречается с изысканностью"}, ka: {title: "სადაც ძველი სამყარო ხვდება დახვეწილ ცხოვრებას"} } }
+            ],
+            aboutSection: {
+                photo: "https://images.unsplash.com/photo-1584132967334-10e028bd69f7?w=600&q=80",
+                langs: { 
+                    en: { label: "Welcome", title: "A boutique hotel rooted in Tbilisi's soul" },
+                    ru: { label: "Добро пожаловать", title: "Бутик-отель, укорененный в душе Тбилиси" },
+                    ka: { label: "კეთილი იყოს თქვენი მობრძанება", title: "ბუტიკ-სასტუმრო თბილისის სულის ფესვებში" }
+                }
+            }
+        },
+        contacts: {
+            phone: "+995 32 200 00 00",
+            email: "hello@tbilinn.ge",
+            address: "14 Shardeni Street, Old Town, Tbilisi",
+            socials: { instagram: "#", facebook: "#" }
+        }
+    };
+
+    document.getElementById('initBtn').addEventListener('click', async (e) => {
+        e.target.disabled = true;
+        log("Начинаю загрузку данных...");
+
+        try {
+            // 1. Загружаем комнаты
+            for (const room of initialRooms) {
+                await setDoc(doc(db, "rooms", room.id), room);
+                log(`Комната ${room.id} создана.`);
+            }
+
+            // 2. Загружаем сервисы
+            for (const svc of initialServices) {
+                await setDoc(doc(db, "services", svc.id), svc);
+                log(`Сервис ${svc.id} создан.`);
+            }
+
+            // 3. Загружаем контент сайта
+            await setDoc(doc(db, "siteContent", "homepage"), siteContent.homepage);
+            await setDoc(doc(db, "siteContent", "contacts"), siteContent.contacts);
+            log(`Контент страниц и контакты созданы.`);
+
+            log("<strong>Успешно! Теперь проверьте вкладку Data в Firebase Console.</strong>");
+        } catch (error) {
+            log(`<span style="color:red">Ошибка: ${error.message}</span>`);
+            e.target.disabled = false;
+        }
+    });
+</script>
+
+</body>
+</html>
