@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Admin — Tbil Inn</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  .view { display: none; }
+  .view.active { display: block; }
+  .toast { position: fixed; bottom: 24px; right: 24px; z-index: 9999; background: #1A1A1A; color: white; padding: 12px 20px; border-radius: 8px; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .toast.show { opacity: 1; pointer-events: auto; }
+  input, textarea, select { border: 1px solid #e7e5e4; border-radius: 6px; width: 100%; padding: 10px; font-family: 'Jost'; }
+  label { display: block; font-size: 0.65rem; font-weight: bold; text-transform: uppercase; margin-bottom: 6px; margin-top: 12px;}
+  .lang-panel { display: none; }
+  .lang-panel.active { display: block; }
+  .lang-tab.active { background: #e5e5e5; }
+</style>
+</head>
+<body class="bg-stone-50 text-stone-800 flex h-screen">
+
+  <!-- Боковое меню -->
+  <aside class="w-64 bg-stone-900 text-white p-6 flex flex-col shrink-0">
+    <h2 class="font-serif text-2xl text-yellow-600 mb-8">TBIL INN ADMIN</h2>
+    <nav class="space-y-2">
+      <button onclick="window.showView('rooms')" class="w-full text-left p-3 hover:bg-stone-800 rounded">Rooms</button>
+      <button onclick="window.showView('services')" class="w-full text-left p-3 hover:bg-stone-800 rounded">Services</button>
+    </nav>
+  </aside>
+
+  <!-- Контент -->
+  <main class="flex-1 overflow-y-auto p-10">
+
+    <!-- СПИСОК КОМНАТ -->
+    <section class="view active" id="view-rooms">
+      <div class="flex justify-between mb-6">
+        <h1 class="text-3xl font-serif">Rooms</h1>
+        <button onclick="window.openRoomEdit()" class="bg-yellow-600 text-white px-4 py-2 rounded">Add Room</button>
+      </div>
+      <div id="rooms-list" class="space-y-4"></div>
+    </section>
+
+    <!-- РЕДАКТОР КОМНАТЫ -->
+    <section class="view" id="view-room-edit">
+      <button onclick="window.showView('rooms')" class="text-sm text-stone-500 mb-4">← Back to Rooms</button>
+      <h1 class="text-2xl font-serif mb-6" id="re-title">Edit Room</h1>
+      
+      <div class="bg-white p-6 rounded shadow-sm border border-stone-200">
+        <!-- Языковые табы -->
+        <div class="flex gap-2 mb-4 bg-stone-100 p-1 rounded">
+          <button class="lang-tab active flex-1 py-2" onclick="window.switchLang('en')">EN</button>
+          <button class="lang-tab flex-1 py-2" onclick="window.switchLang('ru')">RU</button>
+          <button class="lang-tab flex-1 py-2" onclick="window.switchLang('ka')">KA</button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-6 mb-6">
+          <div>
+            <label>Status</label>
+            <select id="re-status"><option value="draft">Draft</option><option value="live">Live</option></select>
+            <label>Price ($)</label>
+            <input type="number" id="re-price">
+            <label>Cover Image URL</label>
+            <input type="url" id="re-cover">
+          </div>
+          <div>
+            <label>Area (m²)</label>
+            <input type="number" id="re-area">
+            <label>Guests</label>
+            <input type="number" id="re-guests">
+            <label>Bed Type</label>
+            <input type="text" id="re-bed">
+          </div>
+        </div>
+
+        <!-- Поля с переводами (EN) -->
+        <div class="lang-panel active" data-lang="en">
+          <label>Name (EN)</label><input type="text" id="re-name-en">
+          <label>Subtitle (EN)</label><input type="text" id="re-sub-en">
+          <label>Description (EN)</label><textarea id="re-desc-en"></textarea>
+        </div>
+        <!-- Поля с переводами (RU) -->
+        <div class="lang-panel" data-lang="ru">
+          <label>Название (RU)</label><input type="text" id="re-name-ru">
+          <label>Подзаголовок (RU)</label><input type="text" id="re-sub-ru">
+          <label>Описание (RU)</label><textarea id="re-desc-ru"></textarea>
+        </div>
+        <!-- Поля с переводами (KA) -->
+        <div class="lang-panel" data-lang="ka">
+          <label>სახელი (KA)</label><input type="text" id="re-name-ka">
+          <label>ქვეტიტრი (KA)</label><input type="text" id="re-sub-ka">
+          <label>აღწერა (KA)</label><textarea id="re-desc-ka"></textarea>
+        </div>
+
+        <div class="mt-8 flex gap-4">
+          <button onclick="window.saveRoom()" class="bg-stone-900 text-white px-6 py-3 rounded">Save Room</button>
+          <button id="btn-delete-room" onclick="window.deleteRoom()" class="text-red-500 px-6 py-3">Delete</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ТУТ МОЖНО ДОБАВИТЬ СЕКЦИЮ SERVICES ПО АНАЛОГИИ -->
+    <section class="view" id="view-services"><h1 class="text-3xl font-serif">Services</h1><p>Work in progress...</p></section>
+
+  </main>
+
+  <div class="toast" id="toast">Saved Successfully!</div>
+
+<script type="module">
+  import { db, collection, getDocs, doc, getDoc, setDoc, deleteDoc } from './main.js';
+
+  let currentRoomId = null;
+
+  // Функция переключения вкладок админки
+  window.showView = function(viewId) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + viewId).classList.add('active');
+    if (viewId === 'rooms') loadRooms();
+  };
+
+  // Функция переключения языков
+  window.switchLang = function(lang) {
+    document.querySelectorAll('.lang-tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    document.querySelectorAll('.lang-panel').forEach(p => {
+      p.classList.toggle('active', p.dataset.lang === lang);
+    });
+  };
+
+  // Показ уведомления
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // ЗАГРУЗКА СПИСКА КОМНАТ ИЗ БД
+  async function loadRooms() {
+    const list = document.getElementById('rooms-list');
+    list.innerHTML = "Loading...";
+    const snap = await getDocs(collection(db, "rooms"));
+    let html = '';
+    snap.forEach(docSnap => {
+      const r = docSnap.data();
+      html += `
+        <div class="bg-white p-4 rounded border flex justify-between items-center">
+          <div class="flex items-center gap-4">
+            <img src="${r.cover}" class="w-16 h-16 object-cover rounded">
+            <div><h3 class="font-bold">${r.langs.en.name}</h3><span class="text-xs bg-stone-100 px-2 py-1 rounded uppercase">${r.status}</span></div>
+          </div>
+          <button onclick="window.openRoomEdit('${docSnap.id}')" class="text-yellow-600 underline">Edit</button>
+        </div>`;
+    });
+    list.innerHTML = html;
+  }
+
+  // ОТКРЫТЬ РЕДАКТОР КОМНАТЫ
+  window.openRoomEdit = async function(id = null) {
+    currentRoomId = id;
+    document.getElementById('btn-delete-room').style.display = id ? 'block' : 'none';
+    document.getElementById('re-title').textContent = id ? 'Edit Room' : 'Add New Room';
+    
+    // Очистка полей
+    document.querySelectorAll('input, textarea').forEach(el => el.value = '');
+    document.getElementById('re-status').value = 'draft';
+
+    if (id) {
+      const snap = await getDoc(doc(db, "rooms", id));
+      if (snap.exists()) {
+        const r = snap.data();
+        document.getElementById('re-status').value = r.status || 'draft';
+        document.getElementById('re-price').value = r.price || '';
+        document.getElementById('re-cover').value = r.cover || '';
+        document.getElementById('re-area').value = r.area || '';
+        document.getElementById('re-guests').value = r.guests || '';
+        document.getElementById('re-bed').value = r.bed || '';
+
+        ['en', 'ru', 'ka'].forEach(l => {
+          if(r.langs && r.langs[l]) {
+            document.getElementById(`re-name-${l}`).value = r.langs[l].name || '';
+            document.getElementById(`re-sub-${l}`).value = r.langs[l].sub || '';
+            document.getElementById(`re-desc-${l}`).value = r.langs[l].desc || '';
+          }
+        });
+      }
+    }
+    window.showView('room-edit');
+  };
+
+  // СОХРАНИТЬ КОМНАТУ В БД
+  window.saveRoom = async function() {
+    const id = currentRoomId || `room-${Date.now()}`;
+    const data = {
+      status: document.getElementById('re-status').value,
+      price: Number(document.getElementById('re-price').value),
+      cover: document.getElementById('re-cover').value,
+      area: Number(document.getElementById('re-area').value),
+      guests: Number(document.getElementById('re-guests').value),
+      bed: document.getElementById('re-bed').value,
+      amenities: ['Wi-Fi', 'A/C', 'TV'], // Упрощено для примера
+      langs: {
+        en: { 
+          name: document.getElementById('re-name-en').value,
+          sub: document.getElementById('re-sub-en').value,
+          desc: document.getElementById('re-desc-en').value 
+        },
+        ru: { 
+          name: document.getElementById('re-name-ru').value,
+          sub: document.getElementById('re-sub-ru').value,
+          desc: document.getElementById('re-desc-ru').value 
+        },
+        ka: { 
+          name: document.getElementById('re-name-ka').value,
+          sub: document.getElementById('re-sub-ka').value,
+          desc: document.getElementById('re-desc-ka').value 
+        }
+      }
+    };
+
+    await setDoc(doc(db, "rooms", id), data);
+    toast("Room saved to Firebase!");
+    window.showView('rooms');
+  };
+
+  // УДАЛИТЬ КОМНАТУ
+  window.deleteRoom = async function() {
+    if(confirm("Are you sure you want to delete this room?")) {
+      await deleteDoc(doc(db, "rooms", currentRoomId));
+      toast("Room deleted.");
+      window.showView('rooms');
+    }
+  }
+
+  // Запуск при старте
+  window.showView('rooms');
+
+</script>
+</body>
+</html>
