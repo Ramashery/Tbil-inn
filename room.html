@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Room — Tbil Inn</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+</head>
+<body style="padding-bottom:70px;">
+
+  <!-- Навигация (как на index.html) -->
+  <nav id="desktop-nav" class="scrolled">
+    <a href="index.html" class="desktop-logo">Tbil Inn</a>
+    <div class="desktop-links">
+      <a href="index.html">Home</a>
+    </div>
+  </nav>
+
+  <!-- Герой комнаты -->
+  <div class="hero-slider-wrapper">
+    <div class="mobile-hero-slides">
+      <div class="mobile-hero-slide">
+        <img id="room-cover" src="" alt="Room">
+        <div class="slide-overlay"></div>
+        <div class="mobile-hero-info">
+          <h1 class="mobile-hero-name" id="room-title">Loading...</h1>
+          <span class="mobile-hero-type" id="room-sub"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <div class="room-content">
+      <div class="room-main-col">
+        <!-- Характеристики -->
+        <div class="room-meta-row">
+          <div class="room-meta-item"><span class="material-symbols-outlined">straighten</span><span id="room-area">- m²</span></div>
+          <div class="room-meta-item"><span class="material-symbols-outlined">king_bed</span><span id="room-bed">-</span></div>
+          <div class="room-meta-item"><span class="material-symbols-outlined">people</span><span id="room-guests">- guests</span></div>
+        </div>
+
+        <div>
+          <h2 class="room-section-title" id="room-highlight"></h2>
+          <p class="room-text" id="room-desc"></p>
+        </div>
+
+        <!-- Удобства -->
+        <div class="amenities-block">
+          <span class="room-section-label">Amenities</span>
+          <div class="amenities-grid" id="amenities-list"></div>
+        </div>
+      </div>
+
+      <!-- Сайдбар бронирования -->
+      <div class="room-sidebar-col">
+        <aside class="booking-card">
+          <div class="booking-card-header">
+            <div class="booking-price">
+              <span class="currency">$</span>
+              <span class="amount" id="room-price">-</span>
+              <span class="per">/ night</span>
+            </div>
+          </div>
+          <div class="booking-form">
+            <button class="btn-reserve" onclick="alert('Booking form placeholder')">Reserve Now</button>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { db, doc, getDoc, currentLang } from './main.js';
+
+    const params = new URLSearchParams(window.location.search);
+    const roomId = params.get('id');
+
+    async function loadRoom() {
+      if (!roomId) return;
+      const docRef = doc(db, "rooms", roomId);
+      const snap = await getDoc(docRef);
+
+      if (snap.exists()) {
+        const data = snap.data();
+        const t = data.langs[currentLang];
+
+        document.title = `${t.name} — Tbil Inn`;
+        document.getElementById('room-cover').src = data.cover;
+        document.getElementById('room-title').textContent = t.name;
+        document.getElementById('room-sub').textContent = t.sub;
+        document.getElementById('room-highlight').textContent = t.highlight;
+        document.getElementById('room-desc').textContent = t.desc;
+        
+        document.getElementById('room-area').textContent = `${data.area} m²`;
+        document.getElementById('room-bed').textContent = data.bed;
+        document.getElementById('room-guests').textContent = `${data.guests} guests`;
+        document.getElementById('room-price').textContent = data.price;
+
+        // Удобства
+        const amGrid = document.getElementById('amenities-list');
+        data.amenities.forEach(am => {
+          amGrid.innerHTML += `<div class="amenity-item"><span class="material-symbols-outlined amenity-icon">check</span><span class="amenity-name">${am}</span></div>`;
+        });
+      } else {
+        document.getElementById('room-title').textContent = "Room not found";
+      }
+    }
+    loadRoom();
+  </script>
+</body>
+</html>
